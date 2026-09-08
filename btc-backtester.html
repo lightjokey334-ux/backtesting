@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>BTC Backtester — simulator de tranzacționare</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lightweight-charts@4/dist/lightweight-charts.standalone.production.js"></script>
+<style>
+  :root{
+    --bg:#0B0E14; --panel:#12151C; --panel-alt:#171B24; --border:#232838;
+    --text:#E8EAED; --text-dim:#7C8494; --text-faint:#4B5266;
+    --accent:#F7931A; --accent-dim:#C97615;
+    --bull:#2FBF8F; --bear:#E5484D; --warn:#F2C94C; --blue:#5B8DEF; --purple:#C77DFF;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; background:var(--bg); color:var(--text); font-family:'Space Grotesk',sans-serif; }
+  body{ min-height:100vh; }
+  input,select,button{ font-family:inherit; }
+  :focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+  .num{ font-family:'IBM Plex Mono',monospace; font-variant-numeric:tabular-nums; }
+  button{ cursor:pointer; }
+  button:disabled{ cursor:not-allowed; opacity:.4; }
+
+  .app{ max-width:1400px; margin:0 auto; padding:14px; }
+
+  .topbar{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding-bottom:12px; border-bottom:1px solid var(--border); margin-bottom:12px; }
+  .brand{ display:flex; align-items:center; gap:8px; margin-right:auto; }
+  .brand .mark{ width:10px; height:10px; border-radius:2px; background:var(--accent); transform:rotate(45deg); }
+  .brand h1{ font-size:16px; font-weight:600; margin:0; letter-spacing:.2px; }
+  .field-group{ display:flex; align-items:center; gap:6px; }
+  .field-group label{ font-size:11px; color:var(--text-dim); }
+  input[type=text], select{
+    background:var(--panel-alt); border:1px solid var(--border); color:var(--text);
+    border-radius:6px; padding:6px 8px; font-size:13px;
+  }
+  input[type=text]{ width:110px; text-transform:uppercase; }
+  .btn{ background:var(--panel-alt); border:1px solid var(--border); color:var(--text); border-radius:6px; padding:6px 12px; font-size:13px; font-weight:500; }
+  .btn:hover:not(:disabled){ border-color:var(--accent); }
+  .btn-accent{ background:var(--accent); border-color:var(--accent); color:#181000; font-weight:600; }
+  .btn-accent:hover:not(:disabled){ background:var(--accent-dim); }
+  .live{ display:flex; align-items:center; gap:6px; font-size:13px; }
+  .live .dot{ width:7px; height:7px; border-radius:50%; background:var(--bull); animation:pulse 1.8s infinite; }
+  @keyframes pulse{ 0%,100%{ opacity:1; } 50%{ opacity:.35; } }
+  @media (prefers-reduced-motion: reduce){ .live .dot{ animation:none; } }
+  .live .price{ font-weight:600; }
+
+  .indicators{ display:flex; flex-wrap:wrap; gap:14px; margin-bottom:10px; }
+  .ind-toggle{ display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-dim); }
+  .ind-toggle .swatch{ width:10px; height:3px; border-radius:2px; }
+
+  .workspace{ display:grid; grid-template-columns:1fr 340px; gap:14px; }
+  @media (max-width:900px){ .workspace{ grid-template-columns:1fr; } }
+
+  .chart-col{ min-width:0; }
+  #chart{ width:100%; height:460px; background:var(--panel); border:1px solid var(--border); border-radius:8px; position:relative; }
+  @media (max-width:640px){ #chart{ height:300px; } }
+  .pnl-overlay{ position:absolute; top:10px; left:12px; z-index:5; pointer-events:none; font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:17px; padding:4px 10px; border-radius:6px; background:rgba(11,14,20,0.72); display:none; }
+  .pnl-overlay.pos{ color:var(--bull); } .pnl-overlay.neg{ color:var(--bear); }
+  .drag-hint{ font-size:10px; color:var(--text-faint); position:absolute; bottom:6px; left:12px; z-index:5; pointer-events:none; }
+
+  .playback-bar{ margin-top:10px; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:10px 12px; }
+  .pb-row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .pb-time{ font-size:12px; color:var(--text-dim); margin-bottom:8px; }
+  .speed-group{ display:flex; gap:4px; margin-left:auto; }
+  .speed-btn{ background:var(--panel-alt); border:1px solid var(--border); color:var(--text-dim); border-radius:5px; padding:4px 8px; font-size:12px; }
+  .speed-btn.active{ background:var(--accent); border-color:var(--accent); color:#181000; font-weight:600; }
+  input[type=range]{ width:100%; margin-top:10px; accent-color:var(--accent); }
+
+  .side-col{ display:flex; flex-direction:column; gap:12px; }
+  .panel{ background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:12px; }
+  .panel h2{ font-size:12px; text-transform:none; letter-spacing:.2px; color:var(--text-dim); margin:0 0 10px; font-weight:500; }
+  .row{ display:flex; justify-content:space-between; align-items:center; padding:3px 0; font-size:13px; }
+  .row .v{ font-weight:600; }
+  .row .v input{ width:90px; background:var(--panel-alt); border:1px solid var(--border); color:var(--text); border-radius:5px; padding:4px 6px; font-size:12px; text-align:right; font-family:'IBM Plex Mono',monospace; }
+  .pos{ color:var(--bull); } .neg{ color:var(--bear); }
+
+  .trade-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
+  .trade-grid label{ display:block; font-size:11px; color:var(--text-dim); margin-bottom:3px; }
+  .trade-grid input{ width:100%; background:var(--panel-alt); border:1px solid var(--border); color:var(--text); border-radius:6px; padding:6px 7px; font-size:13px; }
+  .trade-actions{ display:flex; gap:8px; }
+  .trade-actions .btn{ flex:1; }
+  .btn-long{ background:var(--bull); border-color:var(--bull); color:#06231a; font-weight:600; }
+  .btn-short{ background:var(--bear); border-color:var(--bear); color:#2a0708; font-weight:600; }
+  .hint{ font-size:11px; color:var(--text-faint); margin-top:8px; line-height:1.5; }
+
+  .log-list{ max-height:220px; overflow-y:auto; font-size:12px; }
+  .log-item{ display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid var(--border); }
+  .log-item:last-child{ border-bottom:none; }
+  .log-empty{ color:var(--text-faint); font-size:12px; }
+
+  .status-bar{ margin-top:12px; font-size:12px; color:var(--text-dim); min-height:16px; }
+  .status-bar.warn{ color:var(--warn); }
+  footer{ margin-top:18px; padding-top:12px; border-top:1px solid var(--border); font-size:11px; color:var(--text-faint); line-height:1.6; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="topbar">
+    <div class="brand"><span class="mark"></span><h1>BTC Backtester</h1></div>
+    <div class="field-group">
+      <label>Simbol</label>
+      <select id="symbolSelect">
+        <option value="BTCUSDT" selected>Bitcoin (BTC)</option>
+        <option value="ETHUSDT">Ethereum (ETH)</option>
+        <option value="BNBUSDT">BNB</option>
+        <option value="SOLUSDT">Solana (SOL)</option>
+        <option value="XRPUSDT">XRP</option>
+        <option value="ADAUSDT">Cardano (ADA)</option>
+        <option value="DOGEUSDT">Dogecoin (DOGE)</option>
+        <option value="TRXUSDT">TRON (TRX)</option>
+        <option value="TONUSDT">Toncoin (TON)</option>
+        <option value="AVAXUSDT">Avalanche (AVAX)</option>
+        <option value="LINKUSDT">Chainlink (LINK)</option>
+        <option value="DOTUSDT">Polkadot (DOT)</option>
+        <option value="MATICUSDT">Polygon (MATIC)</option>
+        <option value="LTCUSDT">Litecoin (LTC)</option>
+        <option value="SHIBUSDT">Shiba Inu (SHIB)</option>
+        <option value="ATOMUSDT">Cosmos (ATOM)</option>
+        <option value="NEARUSDT">NEAR</option>
+        <option value="APTUSDT">Aptos (APT)</option>
+        <option value="ARBUSDT">Arbitrum (ARB)</option>
+        <option value="OPUSDT">Optimism (OP)</option>
+        <option value="SUIUSDT">Sui (SUI)</option>
+        <option value="PEPEUSDT">Pepe (PEPE)</option>
+        <option value="UNIUSDT">Uniswap (UNI)</option>
+        <option value="ICPUSDT">Internet Computer (ICP)</option>
+        <option value="FILUSDT">Filecoin (FIL)</option>
+        <option value="ETCUSDT">Ethereum Classic (ETC)</option>
+        <option value="INJUSDT">Injective (INJ)</option>
+        <option value="HBARUSDT">Hedera (HBAR)</option>
+        <option value="VETUSDT">VeChain (VET)</option>
+        <option value="ALGOUSDT">Algorand (ALGO)</option>
+        <option value="__custom__">Alt simbol…</option>
+      </select>
+      <input type="text" id="symbolInput" placeholder="ex: PEPEUSDT" style="display:none;">
+    </div>
+    <div class="field-group">
+      <label>Interval</label>
+      <select id="intervalSelect">
+        <option value="1m">1 minut</option>
+        <option value="5m">5 minute</option>
+        <option value="15m">15 minute</option>
+        <option value="30m">30 minute</option>
+        <option value="1h" selected>1 oră</option>
+        <option value="4h">4 ore</option>
+        <option value="1d">1 zi</option>
+        <option value="1w">1 săptămână</option>
+      </select>
+    </div>
+    <button class="btn btn-accent" id="loadBtn">Încarcă / Actualizează</button>
+    <button class="btn" id="moreHistBtn">+ Istoric</button>
+    <div class="live"><span class="dot"></span><span>Live:</span><span class="price num" id="livePrice">—</span></div>
+  </div>
+
+  <div class="indicators">
+    <label class="ind-toggle"><input type="checkbox" id="toggleSma20"><span class="swatch" style="background:var(--accent)"></span>SMA 20</label>
+    <label class="ind-toggle"><input type="checkbox" id="toggleSma50"><span class="swatch" style="background:var(--blue)"></span>SMA 50</label>
+    <label class="ind-toggle"><input type="checkbox" id="toggleEma20"><span class="swatch" style="background:var(--purple)"></span>EMA 20</label>
+  </div>
+
+  <div class="workspace">
+    <div class="chart-col">
+      <div id="chart"></div>
+
+      <div class="playback-bar">
+        <div class="pb-time num" id="cursorTime">—</div>
+        <div class="pb-row">
+          <button class="btn" id="jumpBackBtn" title="Înapoi 10 lumânări">⏮</button>
+          <button class="btn" id="stepBackBtn" title="Cu o lumânare înapoi">◀</button>
+          <button class="btn btn-accent" id="playBtn">▶ Redare</button>
+          <button class="btn" id="stepFwdBtn" title="Fast-forward la ultima lumânare">Sfârșit ⏭</button>
+          <button class="btn" id="fitBtn" title="Recentrează graficul pe lumânările vizibile">⤢ Centrează</button>
+          <div class="speed-group" id="speedGroup">
+            <button class="speed-btn" data-speed="1">1x</button>
+            <button class="speed-btn" data-speed="2">2x</button>
+            <button class="speed-btn" data-speed="4">4x</button>
+            <button class="speed-btn" data-speed="8">8x</button>
+            <button class="speed-btn" data-speed="16">16x</button>
+          </div>
+        </div>
+        <input type="range" id="scrubber" min="0" max="0" value="0">
+      </div>
+    </div>
+
+    <div class="side-col">
+      <div class="panel">
+        <h2>Cont</h2>
+        <div class="row"><span>Balanță</span><span class="v num" id="balanceOut">$10,000.00</span></div>
+        <div class="row"><span>Echitate curentă</span><span class="v num" id="equityOut">$10,000.00</span></div>
+        <div class="row"><span>Randament total</span><span class="v num" id="returnOut">0.00%</span></div>
+        <div class="row" style="margin-top:6px;">
+          <button class="btn" id="resetBtn" style="width:100%;">Resetează simularea</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Deschide poziție</h2>
+        <div class="row"><span>Preț curent (simulare)</span><span class="v num" id="simPriceOut">—</span></div>
+        <div class="trade-grid">
+          <div><label>Mărime (% balanță)</label><input type="text" id="sizePct" value="100"></div>
+          <div><label>Leverage (x)</label><input type="text" id="leverage" value="1"></div>
+          <div><label id="slLabel">Stop Loss (preț)</label><input type="text" id="slVal" placeholder="ex: 58000"></div>
+          <div><label id="tpLabel">Take Profit (preț)</label><input type="text" id="tpVal" placeholder="ex: 64000"></div>
+          <div><label>Comision (%/tranzacție)</label><input type="text" id="feePct" value="0.1"></div>
+          <div style="display:flex; align-items:flex-end;">
+            <label class="ind-toggle"><input type="checkbox" id="slTpModeToggle"><span>Folosește %</span></label>
+          </div>
+        </div>
+        <div class="trade-actions">
+          <button class="btn btn-long" id="longBtn">Cumpără (Long)</button>
+          <button class="btn btn-short" id="shortBtn">Vinde (Short)</button>
+        </div>
+        <div class="hint">Implicit, SL/TP se introduc ca preț exact (ex: 58000). Bifează „Folosește %" ca să le introduci procentual față de intrare. Se execută la nivelul exact atins de lumânarea următoare (fără slippage); dacă ambele ar fi atinse în aceeași lumânare, are prioritate SL. O singură poziție activă deodată.</div>
+      </div>
+
+      <div class="panel" id="positionPanel">
+        <h2>Poziție deschisă</h2>
+        <div class="log-empty" id="noPosText">Fără poziție deschisă.</div>
+        <div id="posDetails" style="display:none;">
+          <div class="row"><span>Direcție</span><span class="v" id="posSide">—</span></div>
+          <div class="row"><span>Intrare</span><span class="v num" id="posEntry">—</span></div>
+          <div class="row"><span>Cantitate</span><span class="v num" id="posQty">—</span></div>
+          <div class="row"><span>Stop Loss</span><span class="v"><input type="text" id="posSlInput" placeholder="—"></span></div>
+          <div class="row"><span>Take Profit</span><span class="v"><input type="text" id="posTpInput" placeholder="—"></span></div>
+          <div class="row"><span>PnL nerealizat</span><span class="v num" id="posPnl">—</span></div>
+          <button class="btn" id="updateSlTpBtn" style="width:100%; margin-top:2px;">Actualizează SL/TP</button>
+          <div class="hint" style="margin-top:6px;">Poți și trage direct de liniile SL/TP de pe grafic ca să le ajustezi.</div>
+          <button class="btn" id="closeBtn" style="width:100%; margin-top:6px;">Închide poziția</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Statistici</h2>
+        <div class="row"><span>Tranzacții</span><span class="v num" id="statTrades">0</span></div>
+        <div class="row"><span>Rată câștig</span><span class="v num" id="statWinrate">—</span></div>
+        <div class="row"><span>Drawdown maxim</span><span class="v num" id="statDD">0.00%</span></div>
+      </div>
+
+      <div class="panel">
+        <h2>Istoric tranzacții</h2>
+        <div class="log-list" id="logList"><div class="log-empty">Nicio tranzacție încă.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="status-bar" id="statusBar">Se încarcă datele inițiale…</div>
+
+  <footer>
+    Date reale de pe Binance (piață spot). Instrument educațional pentru exersat strategii — folosește bani virtuali, nu constituie sfat financiar. Modelul simplifică unele lucruri: fără slippage, fără funding, execuție SL/TP exact la nivelul setat.
+  </footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  const COLORS = { bull:'#2FBF8F', bear:'#E5484D', accent:'#F7931A', blue:'#5B8DEF', purple:'#C77DFF' };
+
+  const state = {
+    symbol:'BTCUSDT', interval:'1h', candles:[],
+    sma20:[], sma50:[], ema20:[],
+    cursor:0, playing:false, speed:1, timer:null,
+    startBalance:10000, balance:10000, slTpMode:'price',
+    position:null, trades:[], markers:[],
+    slLine:null, tpLine:null, entryLine:null,
+    peakEquity:10000, maxDrawdownPct:0
+  };
+
+  let dragState = null;
+
+  // ---------- chart setup ----------
+  const chartEl = document.getElementById('chart');
+  const chart = LightweightCharts.createChart(chartEl, {
+    autoSize:true,
+    layout:{ background:{ color:'transparent' }, textColor:'#7C8494', fontFamily:"'IBM Plex Mono', monospace" },
+    grid:{ vertLines:{ color:'#1b2030' }, horzLines:{ color:'#1b2030' } },
+    rightPriceScale:{ borderColor:'#232838' },
+    timeScale:{ borderColor:'#232838', timeVisible:true, secondsVisible:false },
+    crosshair:{ mode: LightweightCharts.CrosshairMode.Normal }
+  });
+  const candleSeries = chart.addCandlestickSeries({
+    upColor:COLORS.bull, downColor:COLORS.bear, borderVisible:false,
+    wickUpColor:COLORS.bull, wickDownColor:COLORS.bear
+  });
+  const sma20Series = chart.addLineSeries({ color:COLORS.accent, lineWidth:2, visible:false, priceLineVisible:false, lastValueVisible:false });
+  const sma50Series = chart.addLineSeries({ color:COLORS.blue, lineWidth:2, visible:false, priceLineVisible:false, lastValueVisible:false });
+  const ema20Series = chart.addLineSeries({ color:COLORS.purple, lineWidth:2, visible:false, priceLineVisible:false, lastValueVisible:false });
+
+  const pnlOverlay = document.createElement('div');
+  pnlOverlay.id = 'pnlOverlay';
+  pnlOverlay.className = 'pnl-overlay';
+  chartEl.appendChild(pnlOverlay);
+  const dragHint = document.createElement('div');
+  dragHint.id = 'dragHint';
+  dragHint.className = 'drag-hint';
+  dragHint.textContent = 'Trage liniile SL / TP direct pe grafic';
+  dragHint.style.display = 'none';
+  chartEl.appendChild(dragHint);
+
+  // ---------- helpers ----------
+  function clamp(v,min,max){ return Math.min(max,Math.max(min,v)); }
+  function formatUsd(n){ if(n==null||isNaN(n)) return '—'; return '$'+n.toLocaleString('ro-RO',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  function formatSigned(n){ if(n==null||isNaN(n)) return '—'; const s=n>=0?'+':''; return s+n.toLocaleString('ro-RO',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  function formatQty(n){ if(n==null||isNaN(n)) return '—'; return n.toFixed(6); }
+  function formatPriceRaw(n){ if(n==null||isNaN(n)) return ''; const abs=Math.abs(n); const d = abs>=100?2 : abs>=1?4 : 8; return n.toFixed(d); }
+  function cacheKey(){ return 'btcbt_v1_'+state.symbol+'_'+state.interval; }
+  function setStatus(msg, warn){
+    const el = document.getElementById('statusBar');
+    el.textContent = msg;
+    el.className = 'status-bar'+(warn?' warn':'');
+  }
+
+  async function fetchCandles(symbol, interval, limit, endTime){
+    let url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
+    if(endTime) url += `&endTime=${endTime}`;
+    const res = await fetch(url);
+    if(!res.ok) throw new Error('Binance API error '+res.status);
+    const data = await res.json();
+    if(!Array.isArray(data)) throw new Error(data.msg || 'Răspuns invalid');
+    return data.map(d=>({ time:Math.floor(d[0]/1000), open:+d[1], high:+d[2], low:+d[3], close:+d[4], volume:+d[5] }));
+  }
+
+  async function pollLivePrice(){
+    try{
+      const res = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${state.symbol}`);
+      const d = await res.json();
+      if(d && d.price) document.getElementById('livePrice').textContent = formatUsd(+d.price);
+    }catch(e){ /* ignore transient errors */ }
+  }
+  let liveTimer = null;
+  function restartLivePoll(){ if(liveTimer) clearInterval(liveTimer); pollLivePrice(); liveTimer = setInterval(pollLivePrice, 8000); }
+
+  // ---------- indicators ----------
+  function computeSMA(candles, period){
+    const out=[]; let sum=0;
+    for(let i=0;i<candles.length;i++){
+      sum += candles[i].close;
+      if(i>=period) sum -= candles[i-period].close;
+      if(i>=period-1) out.push({ time:candles[i].time, value: sum/period });
+    }
+    return out;
+  }
+  function computeEMA(candles, period){
+    const out=[]; const k=2/(period+1); let prev;
+    for(let i=0;i<candles.length;i++){
+      const price=candles[i].close;
+      prev = (i===0) ? price : (price*k + prev*(1-k));
+      if(i>=period-1) out.push({ time:candles[i].time, value: prev });
+    }
+    return out;
+  }
+  function computeIndicators(){
+    state.sma20 = computeSMA(state.candles,20);
+    state.sma50 = computeSMA(state.candles,50);
+    state.ema20 = computeEMA(state.candles,20);
+  }
+
+  // ---------- data loading ----------
+  async function loadData(){
+    setStatus('Se încarcă datele de pe Binance…');
+    document.getElementById('loadBtn').disabled = true;
+    try{
+      const raw = await fetchCandles(state.symbol, state.interval, 1000, null);
+      if(!raw.length) throw new Error('Simbol inexistent sau fără date');
+      state.candles = raw;
+      try{ localStorage.setItem(cacheKey(), JSON.stringify(raw)); }catch(e){}
+      onDataLoaded();
+      setStatus(`Încărcate ${raw.length} lumânări (${state.symbol}, ${state.interval}) — date reale de pe Binance.`);
+    }catch(err){
+      console.error(err);
+      let cached=null;
+      try{ cached = localStorage.getItem(cacheKey()); }catch(e){}
+      if(cached){
+        state.candles = JSON.parse(cached);
+        onDataLoaded();
+        setStatus('Nu am putut contacta Binance — se afișează datele salvate din sesiunea anterioară (offline).', true);
+      } else {
+        setStatus('Eroare la încărcarea datelor. Verifică conexiunea la internet sau simbolul introdus.', true);
+      }
+    }
+    document.getElementById('loadBtn').disabled = false;
+    restartLivePoll();
+  }
+
+  async function changeTimeframe(){
+    const newInterval = document.getElementById('intervalSelect').value;
+    if(newInterval === state.interval) return;
+    if(!state.candles.length){ state.interval = newInterval; return; }
+    pause();
+    const anchorTime = state.candles[state.cursor] ? state.candles[state.cursor].time : null;
+    setStatus('Se schimbă intervalul de timp…');
+    document.getElementById('loadBtn').disabled = true;
+    try{
+      const raw = await fetchCandles(state.symbol, newInterval, 1000, null);
+      if(!raw.length) throw new Error('Fără date pentru acest interval.');
+      state.interval = newInterval;
+      state.candles = raw;
+      try{ localStorage.setItem(cacheKey(), JSON.stringify(raw)); }catch(e){}
+      computeIndicators();
+      if(anchorTime!=null){
+        let idx = raw.findIndex(c=>c.time>=anchorTime);
+        state.cursor = idx===-1 ? raw.length-1 : idx;
+      } else {
+        state.cursor = Math.min(50, Math.max(0, Math.floor(raw.length*0.15)));
+      }
+      updateScrubberRange();
+      renderChart();
+      fitView();
+      updateAllUI();
+      setStatus(`Interval schimbat la ${newInterval} — balanța, poziția deschisă și istoricul de tranzacții au fost păstrate.`);
+    }catch(err){
+      console.error(err);
+      setStatus('Eroare la schimbarea intervalului. Verifică conexiunea la internet.', true);
+    }
+    document.getElementById('loadBtn').disabled = false;
+    restartLivePoll();
+  }
+
+  async function loadMoreHistory(){
+    if(!state.candles.length) return;
+    document.getElementById('moreHistBtn').disabled = true;
+    setStatus('Se încarcă istoric suplimentar…');
+    try{
+      const oldestMs = state.candles[0].time*1000;
+      const older = await fetchCandles(state.symbol, state.interval, 1000, oldestMs-1);
+      if(!older.length){ setStatus('Nu mai există istoric disponibil pentru acest simbol/interval.'); }
+      else{
+        state.cursor += older.length;
+        state.candles = older.concat(state.candles);
+        try{ localStorage.setItem(cacheKey(), JSON.stringify(state.candles)); }catch(e){}
+        computeIndicators();
+        renderChart();
+        updateScrubberRange();
+        fitView();
+        setStatus(`+${older.length} lumânări adăugate în istoric.`);
+      }
+    }catch(e){ console.error(e); setStatus('Eroare la încărcarea istoricului suplimentar.', true); }
+    document.getElementById('moreHistBtn').disabled = false;
+  }
+
+  function onDataLoaded(){
+    computeIndicators();
+    resetSimulation();
+  }
+
+  // ---------- simulation control ----------
+  function resetSimulation(){
+    pause();
+    state.cursor = Math.min(50, Math.max(0, Math.floor(state.candles.length*0.15)));
+    state.balance = state.startBalance;
+    state.position = null;
+    state.trades = [];
+    state.markers = [];
+    state.peakEquity = state.startBalance;
+    state.maxDrawdownPct = 0;
+    clearPositionLines();
+    updateScrubberRange();
+    renderChart();
+    fitView();
+    updateAllUI();
+  }
+
+  function fitView(){
+    chart.timeScale().fitContent();
+  }
+
+  function updateScrubberRange(){
+    const scrub = document.getElementById('scrubber');
+    scrub.max = Math.max(0, state.candles.length-1);
+    scrub.value = state.cursor;
+  }
+
+  function play(){
+    if(state.playing || !state.candles.length) return;
+    if(state.cursor+1 >= state.candles.length){ setStatus('Ai ajuns la ultima lumânare încărcată. Apasă "+ Istoric" sau "Încarcă / Actualizează".'); return; }
+    state.playing = true;
+    document.getElementById('playBtn').textContent = '❚❚ Pauză';
+    updateScrubDisabled();
+    state.timer = setInterval(tick, Math.max(40, 700/state.speed));
+  }
+  function pause(){
+    state.playing = false;
+    if(state.timer) clearInterval(state.timer);
+    document.getElementById('playBtn').textContent = '▶ Redare';
+    updateScrubDisabled();
+  }
+  function togglePlay(){ state.playing ? pause() : play(); }
+
+  function tick(){
+    if(state.cursor+1 >= state.candles.length){
+      pause();
+      setStatus('Sfârșitul datelor încărcate. Apasă "+ Istoric" pentru mai mult trecut sau "Încarcă / Actualizează" pentru date noi.');
+      return;
+    }
+    state.cursor++;
+    const c = state.candles[state.cursor];
+    checkPositionOnCandle(c);
+    trackDrawdown(c);
+    renderChart();
+    updateAllUI();
+  }
+
+  function fastForwardToEnd(){
+    pause();
+    if(!state.candles.length) return;
+    while(state.cursor+1 < state.candles.length){
+      state.cursor++;
+      const c = state.candles[state.cursor];
+      checkPositionOnCandle(c);
+      trackDrawdown(c);
+    }
+    renderChart();
+    updateAllUI();
+    setStatus('Derulat până la ultima lumânare disponibilă.');
+  }
+
+  function stepBack(){
+    if(state.playing || state.position || state.cursor<=0) return;
+    state.cursor--;
+    renderChart();
+    updateAllUI();
+  }
+  function jumpBack(){
+    if(state.playing || state.position) return;
+    state.cursor = Math.max(0, state.cursor-10);
+    renderChart();
+    updateAllUI();
+  }
+  function scrubTo(idx){
+    if(state.playing || state.position) return;
+    state.cursor = clamp(idx, 0, state.candles.length-1);
+    renderChart();
+    updateAllUI();
+  }
+  function updateScrubDisabled(){
+    const disabled = state.playing || !!state.position;
+    document.getElementById('scrubber').disabled = disabled;
+    document.getElementById('stepBackBtn').disabled = disabled || state.cursor<=0;
+    document.getElementById('jumpBackBtn').disabled = disabled || state.cursor<=0;
+  }
+
+  function trackDrawdown(c){
+    const equity = state.balance + unrealizedPnl(c);
+    if(equity > state.peakEquity) state.peakEquity = equity;
+    const dd = state.peakEquity>0 ? (state.peakEquity-equity)/state.peakEquity*100 : 0;
+    if(dd > state.maxDrawdownPct) state.maxDrawdownPct = dd;
+  }
+
+  // ---------- trading ----------
+  function unrealizedPnl(c){
+    if(!state.position) return 0;
+    const p = state.position; const dir = p.side==='long'?1:-1;
+    return (c.close-p.entry)*p.qty*dir;
+  }
+
+  function openPosition(side){
+    if(state.position){ setStatus('Ai deja o poziție deschisă — închide-o înainte de a deschide alta.', true); return; }
+    if(!state.candles.length) return;
+    if(state.playing) pause();
+    const c = state.candles[state.cursor];
+    const entry = c.close;
+    const sizePct = clamp(parseFloat(document.getElementById('sizePct').value)||0, 1, 100);
+    const leverage = clamp(parseFloat(document.getElementById('leverage').value)||1, 1, 25);
+    const slRaw = document.getElementById('slVal').value;
+    const tpRaw = document.getElementById('tpVal').value;
+    const notional = state.balance*(sizePct/100)*leverage;
+    const qty = notional/entry;
+    let sl=null, tp=null;
+    if(state.slTpMode==='percent'){
+      if(slRaw !== ''){ const p=Math.abs(parseFloat(slRaw)); if(!isNaN(p)) sl = side==='long' ? entry*(1-p/100) : entry*(1+p/100); }
+      if(tpRaw !== ''){ const p=Math.abs(parseFloat(tpRaw)); if(!isNaN(p)) tp = side==='long' ? entry*(1+p/100) : entry*(1-p/100); }
+    } else {
+      if(slRaw !== ''){ const v=parseFloat(slRaw); if(!isNaN(v)) sl=v; }
+      if(tpRaw !== ''){ const v=parseFloat(tpRaw); if(!isNaN(v)) tp=v; }
+    }
+    if(side==='long'){
+      if(sl!=null && sl>=entry){ setStatus(`Stop Loss trebuie să fie sub prețul de intrare (${formatUsd(entry)}) pentru o poziție Long.`, true); return; }
+      if(tp!=null && tp<=entry){ setStatus(`Take Profit trebuie să fie peste prețul de intrare (${formatUsd(entry)}) pentru o poziție Long.`, true); return; }
+    } else {
+      if(sl!=null && sl<=entry){ setStatus(`Stop Loss trebuie să fie peste prețul de intrare (${formatUsd(entry)}) pentru o poziție Short.`, true); return; }
+      if(tp!=null && tp>=entry){ setStatus(`Take Profit trebuie să fie sub prețul de intrare (${formatUsd(entry)}) pentru o poziție Short.`, true); return; }
+    }
+
+    state.position = { side, entry, qty, sl, tp, entryTime:c.time, leverage };
+    drawPositionLines();
+    addMarker(c.time, side==='long'?'arrowUp':'arrowDown', side==='long'?'Buy':'Sell', side==='long'?COLORS.bull:COLORS.bear, side==='long'?'belowBar':'aboveBar');
+    setStatus(`Poziție ${side==='long'?'LONG':'SHORT'} deschisă la ${formatUsd(entry)}.`);
+    updateAllUI();
+  }
+
+  function closePositionManual(){
+    if(!state.position) return;
+    const c = state.candles[state.cursor];
+    closePosition(c.close, 'Manual', c.time);
+  }
+
+  function closePosition(exitPrice, reason, exitTime){
+    const p = state.position; if(!p) return;
+    const dir = p.side==='long'?1:-1;
+    let pnl = (exitPrice-p.entry)*p.qty*dir;
+    const feePct = parseFloat(document.getElementById('feePct').value)||0;
+    const fee = (p.entry*p.qty + exitPrice*p.qty)*(feePct/100);
+    pnl -= fee;
+    state.balance += pnl;
+    state.trades.push({ side:p.side, entry:p.entry, exit:exitPrice, entryTime:p.entryTime, exitTime, pnl, reason });
+    addMarker(exitTime, p.side==='long'?'arrowDown':'arrowUp', reason, pnl>=0?COLORS.bull:COLORS.bear, p.side==='long'?'aboveBar':'belowBar');
+    clearPositionLines();
+    state.position = null;
+    setStatus(`Poziție închisă (${reason}) la ${formatUsd(exitPrice)} — PnL: ${formatSigned(pnl)} $`);
+    updateAllUI();
+  }
+
+  function checkPositionOnCandle(c){
+    if(!state.position) return;
+    const p = state.position;
+    if(p.side==='long'){
+      if(p.sl!=null && c.low<=p.sl){ closePosition(p.sl,'SL',c.time); return; }
+      if(p.tp!=null && c.high>=p.tp){ closePosition(p.tp,'TP',c.time); return; }
+    } else {
+      if(p.sl!=null && c.high>=p.sl){ closePosition(p.sl,'SL',c.time); return; }
+      if(p.tp!=null && c.low<=p.tp){ closePosition(p.tp,'TP',c.time); return; }
+    }
+  }
+
+  function setSlLine(price){
+    if(state.slLine){ candleSeries.removePriceLine(state.slLine); state.slLine=null; }
+    if(price!=null) state.slLine = candleSeries.createPriceLine({ price, color:COLORS.bear, lineWidth:1, lineStyle:LightweightCharts.LineStyle.Dashed, axisLabelVisible:true, title:'SL' });
+  }
+  function setTpLine(price){
+    if(state.tpLine){ candleSeries.removePriceLine(state.tpLine); state.tpLine=null; }
+    if(price!=null) state.tpLine = candleSeries.createPriceLine({ price, color:COLORS.bull, lineWidth:1, lineStyle:LightweightCharts.LineStyle.Dashed, axisLabelVisible:true, title:'TP' });
+  }
+  function drawPositionLines(){
+    const p = state.position;
+    state.entryLine = candleSeries.createPriceLine({ price:p.entry, color:'#7C8494', lineWidth:1, lineStyle:LightweightCharts.LineStyle.Dotted, axisLabelVisible:true, title:'Intrare' });
+    setSlLine(p.sl);
+    setTpLine(p.tp);
+    document.getElementById('dragHint').style.display = 'block';
+  }
+  function clearPositionLines(){
+    if(state.entryLine){ candleSeries.removePriceLine(state.entryLine); state.entryLine=null; }
+    setSlLine(null);
+    setTpLine(null);
+    document.getElementById('dragHint').style.display = 'none';
+  }
+  function addMarker(time, shape, text, color, position){
+    state.markers.push({ time, position, color, shape, text });
+    state.markers.sort((a,b)=>a.time-b.time);
+    candleSeries.setMarkers(state.markers);
+  }
+
+  // ---------- drag SL/TP lines on the chart ----------
+  function getLineCoords(){
+    const out = {};
+    if(state.position){
+      if(state.position.sl!=null) out.sl = candleSeries.priceToCoordinate(state.position.sl);
+      if(state.position.tp!=null) out.tp = candleSeries.priceToCoordinate(state.position.tp);
+    }
+    return out;
+  }
+  function nearestLineAt(y){
+    const coords = getLineCoords();
+    const threshold = 10;
+    if(coords.sl!=null && Math.abs(y-coords.sl)<=threshold) return 'sl';
+    if(coords.tp!=null && Math.abs(y-coords.tp)<=threshold) return 'tp';
+    return null;
+  }
+  function applyDraggedLevel(which, price){
+    const p = state.position; if(!p) return;
+    if(which==='sl'){
+      if(p.side==='long' && price>=p.entry) return;
+      if(p.side==='short' && price<=p.entry) return;
+      p.sl = price; setSlLine(price);
+    } else {
+      if(p.side==='long' && price<=p.entry) return;
+      if(p.side==='short' && price>=p.entry) return;
+      p.tp = price; setTpLine(price);
+    }
+    updateAllUI();
+  }
+  chartEl.addEventListener('mousedown', e=>{
+    if(!state.position) return;
+    const rect = chartEl.getBoundingClientRect();
+    const y = e.clientY - rect.top;
+    const which = nearestLineAt(y);
+    if(!which) return;
+    e.stopPropagation(); e.preventDefault();
+    dragState = which;
+  }, { capture:true });
+  chartEl.addEventListener('touchstart', e=>{
+    if(!state.position || !e.touches.length) return;
+    const rect = chartEl.getBoundingClientRect();
+    const y = e.touches[0].clientY - rect.top;
+    const which = nearestLineAt(y);
+    if(!which) return;
+    e.stopPropagation(); e.preventDefault();
+    dragState = which;
+  }, { capture:true, passive:false });
+  chartEl.addEventListener('mousemove', e=>{
+    if(dragState || !state.position) return;
+    const rect = chartEl.getBoundingClientRect();
+    chartEl.style.cursor = nearestLineAt(e.clientY-rect.top) ? 'ns-resize' : '';
+  });
+  document.addEventListener('mousemove', e=>{
+    if(!dragState) return;
+    const rect = chartEl.getBoundingClientRect();
+    const price = candleSeries.coordinateToPrice(e.clientY-rect.top);
+    if(price!=null) applyDraggedLevel(dragState, price);
+  });
+  document.addEventListener('touchmove', e=>{
+    if(!dragState || !e.touches.length) return;
+    e.preventDefault();
+    const rect = chartEl.getBoundingClientRect();
+    const price = candleSeries.coordinateToPrice(e.touches[0].clientY-rect.top);
+    if(price!=null) applyDraggedLevel(dragState, price);
+  }, { passive:false });
+  document.addEventListener('mouseup', ()=>{ dragState=null; chartEl.style.cursor=''; });
+  document.addEventListener('touchend', ()=>{ dragState=null; });
+
+  // ---------- rendering ----------
+  function renderChart(){
+    if(!state.candles.length) return;
+    const visible = state.candles.slice(0, state.cursor+1);
+    candleSeries.setData(visible);
+    const lastTime = visible[visible.length-1].time;
+    sma20Series.setData(state.sma20.filter(d=>d.time<=lastTime));
+    sma50Series.setData(state.sma50.filter(d=>d.time<=lastTime));
+    ema20Series.setData(state.ema20.filter(d=>d.time<=lastTime));
+    candleSeries.setMarkers(state.markers.filter(m=>m.time<=lastTime));
+  }
+
+  function updateAllUI(){
+    if(!state.candles.length) return;
+    const c = state.candles[state.cursor];
+    document.getElementById('scrubber').value = state.cursor;
+    document.getElementById('cursorTime').textContent = new Date(c.time*1000).toLocaleString('ro-RO', { dateStyle:'medium', timeStyle:'short' });
+    document.getElementById('simPriceOut').textContent = formatUsd(c.close);
+
+    const equity = state.balance + unrealizedPnl(c);
+    document.getElementById('balanceOut').textContent = formatUsd(state.balance);
+    document.getElementById('equityOut').textContent = formatUsd(equity);
+    const ret = (equity-state.startBalance)/state.startBalance*100;
+    const retEl = document.getElementById('returnOut');
+    retEl.textContent = (ret>=0?'+':'')+ret.toFixed(2)+'%';
+    retEl.className = 'v num '+(ret>=0?'pos':'neg');
+
+    document.getElementById('statTrades').textContent = state.trades.length;
+    const wins = state.trades.filter(t=>t.pnl>0).length;
+    document.getElementById('statWinrate').textContent = state.trades.length ? (wins/state.trades.length*100).toFixed(1)+'%' : '—';
+    document.getElementById('statDD').textContent = state.maxDrawdownPct.toFixed(2)+'%';
+
+    const noPos = document.getElementById('noPosText');
+    const posDet = document.getElementById('posDetails');
+    const overlay = document.getElementById('pnlOverlay');
+    if(state.position){
+      noPos.style.display='none'; posDet.style.display='block';
+      const p = state.position;
+      document.getElementById('posSide').textContent = p.side==='long' ? 'LONG' : 'SHORT';
+      document.getElementById('posEntry').textContent = formatUsd(p.entry);
+      document.getElementById('posQty').textContent = formatQty(p.qty);
+      const slInp = document.getElementById('posSlInput');
+      const tpInp = document.getElementById('posTpInput');
+      if(document.activeElement !== slInp) slInp.value = p.sl!=null ? formatPriceRaw(p.sl) : '';
+      if(document.activeElement !== tpInp) tpInp.value = p.tp!=null ? formatPriceRaw(p.tp) : '';
+      const upnl = unrealizedPnl(c);
+      const pnlEl = document.getElementById('posPnl');
+      pnlEl.textContent = formatSigned(upnl)+' $';
+      pnlEl.className = 'v num '+(upnl>=0?'pos':'neg');
+      const notional = p.entry*p.qty;
+      const pct = notional>0 ? upnl/notional*100 : 0;
+      overlay.textContent = formatSigned(upnl)+' $  ('+(pct>=0?'+':'')+pct.toFixed(2)+'%)';
+      overlay.className = 'pnl-overlay '+(upnl>=0?'pos':'neg');
+      overlay.style.display = 'block';
+    } else {
+      noPos.style.display='block'; posDet.style.display='none';
+      overlay.style.display = 'none';
+    }
+
+    document.getElementById('longBtn').disabled = !!state.position;
+    document.getElementById('shortBtn').disabled = !!state.position;
+    document.getElementById('closeBtn').disabled = !state.position;
+    document.getElementById('stepFwdBtn').disabled = state.cursor+1>=state.candles.length && !state.playing;
+    updateScrubDisabled();
+    renderLog();
+  }
+
+  function renderLog(){
+    const el = document.getElementById('logList');
+    if(!state.trades.length){ el.innerHTML = '<div class="log-empty">Nicio tranzacție încă.</div>'; return; }
+    const rows = state.trades.slice().reverse().map(t=>{
+      const cls = t.pnl>=0 ? 'pos' : 'neg';
+      const dt = new Date(t.exitTime*1000).toLocaleDateString('ro-RO');
+      return `<div class="log-item"><span>${t.side==='long'?'Long':'Short'} · ${t.reason} · ${dt}</span><span class="num ${cls}">${formatSigned(t.pnl)} $</span></div>`;
+    }).join('');
+    el.innerHTML = rows;
+  }
+
+  // ---------- wiring ----------
+  document.getElementById('loadBtn').addEventListener('click', applyAndReload);
+  document.getElementById('symbolSelect').addEventListener('change', e=>{
+    const customInput = document.getElementById('symbolInput');
+    if(e.target.value === '__custom__'){
+      customInput.style.display = 'inline-block';
+      customInput.focus();
+    } else {
+      customInput.style.display = 'none';
+      applyAndReload();
+    }
+  });
+  document.getElementById('symbolInput').addEventListener('keydown', e=>{ if(e.key==='Enter') applyAndReload(); });
+  document.getElementById('intervalSelect').addEventListener('change', changeTimeframe);
+  document.getElementById('moreHistBtn').addEventListener('click', loadMoreHistory);
+  document.getElementById('resetBtn').addEventListener('click', resetSimulation);
+  document.getElementById('fitBtn').addEventListener('click', fitView);
+  document.getElementById('updateSlTpBtn').addEventListener('click', ()=>{
+    if(!state.position) return;
+    const p = state.position;
+    const slRaw = document.getElementById('posSlInput').value;
+    const tpRaw = document.getElementById('posTpInput').value;
+    const newSl = slRaw==='' ? null : parseFloat(slRaw);
+    const newTp = tpRaw==='' ? null : parseFloat(tpRaw);
+    if(slRaw!=='' && isNaN(newSl)){ setStatus('Valoare Stop Loss invalidă.', true); return; }
+    if(tpRaw!=='' && isNaN(newTp)){ setStatus('Valoare Take Profit invalidă.', true); return; }
+    if(p.side==='long'){
+      if(newSl!=null && newSl>=p.entry){ setStatus(`SL trebuie să fie sub prețul de intrare (${formatUsd(p.entry)}).`, true); return; }
+      if(newTp!=null && newTp<=p.entry){ setStatus(`TP trebuie să fie peste prețul de intrare (${formatUsd(p.entry)}).`, true); return; }
+    } else {
+      if(newSl!=null && newSl<=p.entry){ setStatus(`SL trebuie să fie peste prețul de intrare (${formatUsd(p.entry)}).`, true); return; }
+      if(newTp!=null && newTp>=p.entry){ setStatus(`TP trebuie să fie sub prețul de intrare (${formatUsd(p.entry)}).`, true); return; }
+    }
+    p.sl = newSl; p.tp = newTp;
+    setSlLine(newSl); setTpLine(newTp);
+    setStatus('SL/TP actualizate.');
+    updateAllUI();
+  });
+  document.getElementById('slTpModeToggle').addEventListener('change', e=>{
+    state.slTpMode = e.target.checked ? 'percent' : 'price';
+    const isPct = state.slTpMode==='percent';
+    document.getElementById('slLabel').textContent = isPct ? 'Stop Loss (%)' : 'Stop Loss (preț)';
+    document.getElementById('tpLabel').textContent = isPct ? 'Take Profit (%)' : 'Take Profit (preț)';
+    document.getElementById('slVal').placeholder = isPct ? 'ex: 2' : 'ex: 58000';
+    document.getElementById('tpVal').placeholder = isPct ? 'ex: 4' : 'ex: 64000';
+    document.getElementById('slVal').value = '';
+    document.getElementById('tpVal').value = '';
+  });
+
+  document.getElementById('playBtn').addEventListener('click', togglePlay);
+  document.getElementById('stepBackBtn').addEventListener('click', stepBack);
+  document.getElementById('jumpBackBtn').addEventListener('click', jumpBack);
+  document.getElementById('stepFwdBtn').addEventListener('click', fastForwardToEnd);
+  document.getElementById('scrubber').addEventListener('input', e=> scrubTo(parseInt(e.target.value,10)) );
+
+  document.getElementById('speedGroup').addEventListener('click', e=>{
+    const btn = e.target.closest('.speed-btn'); if(!btn) return;
+    state.speed = parseFloat(btn.dataset.speed);
+    document.querySelectorAll('.speed-btn').forEach(b=>b.classList.toggle('active', b===btn));
+    if(state.playing){ pause(); play(); }
+  });
+  document.querySelector('.speed-btn[data-speed="1"]').classList.add('active');
+
+  document.getElementById('longBtn').addEventListener('click', ()=>openPosition('long'));
+  document.getElementById('shortBtn').addEventListener('click', ()=>openPosition('short'));
+  document.getElementById('closeBtn').addEventListener('click', closePositionManual);
+
+  document.getElementById('toggleSma20').addEventListener('change', e=> sma20Series.applyOptions({visible:e.target.checked}) );
+  document.getElementById('toggleSma50').addEventListener('change', e=> sma50Series.applyOptions({visible:e.target.checked}) );
+  document.getElementById('toggleEma20').addEventListener('change', e=> ema20Series.applyOptions({visible:e.target.checked}) );
+
+  function applyAndReload(){
+    const sel = document.getElementById('symbolSelect').value;
+    let sym;
+    if(sel === '__custom__'){
+      sym = document.getElementById('symbolInput').value.trim().toUpperCase();
+      if(!sym) return;
+    } else {
+      sym = sel;
+    }
+    state.symbol = sym;
+    state.interval = document.getElementById('intervalSelect').value;
+    pause();
+    loadData();
+  }
+
+  // ---------- init ----------
+  loadData();
+})();
+</script>
+</body>
+</html>
