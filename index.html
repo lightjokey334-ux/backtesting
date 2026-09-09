@@ -15,68 +15,67 @@
     --bull:#2FBF8F; --bear:#E5484D; --warn:#F2C94C; --blue:#5B8DEF; --purple:#C77DFF;
   }
   *{ box-sizing:border-box; }
-  html,body{ margin:0; padding:0; background:var(--bg); color:var(--text); font-family:'Space Grotesk',sans-serif; }
-  body{ min-height:100vh; }
+  html,body{ margin:0; padding:0; background:var(--bg); color:var(--text); font-family:'Space Grotesk',sans-serif; height:100%; overflow:hidden; }
   input,select,button{ font-family:inherit; }
   :focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
   .num{ font-family:'IBM Plex Mono',monospace; font-variant-numeric:tabular-nums; }
   button{ cursor:pointer; }
   button:disabled{ cursor:not-allowed; opacity:.4; }
 
-  .app{ max-width:1400px; margin:0 auto; padding:14px; }
+  .app{ max-width:1400px; margin:0 auto; padding:10px 14px; height:100vh; height:100dvh; display:flex; flex-direction:column; overflow:hidden; }
 
-  .topbar{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding-bottom:12px; border-bottom:1px solid var(--border); margin-bottom:12px; }
-  .brand{ display:flex; align-items:center; gap:8px; margin-right:auto; }
+  .topbar{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding-bottom:8px; border-bottom:1px solid var(--border); margin-bottom:8px; flex-shrink:0; }
+  .brand{ display:flex; align-items:center; gap:6px; margin-right:auto; }
   .brand .mark{ width:10px; height:10px; border-radius:2px; background:var(--accent); transform:rotate(45deg); }
   .brand h1{ font-size:16px; font-weight:600; margin:0; letter-spacing:.2px; }
   .field-group{ display:flex; align-items:center; gap:6px; }
   .field-group label{ font-size:11px; color:var(--text-dim); }
-  input[type=text], select{
+  input[type=text], input[type=date], select{
     background:var(--panel-alt); border:1px solid var(--border); color:var(--text);
     border-radius:6px; padding:6px 8px; font-size:13px;
   }
   input[type=text]{ width:110px; text-transform:uppercase; }
+  input[type=date]{ width:132px; text-transform:none; }
   .btn{ background:var(--panel-alt); border:1px solid var(--border); color:var(--text); border-radius:6px; padding:6px 12px; font-size:13px; font-weight:500; }
   .btn:hover:not(:disabled){ border-color:var(--accent); }
   .btn-accent{ background:var(--accent); border-color:var(--accent); color:#181000; font-weight:600; }
   .btn-accent:hover:not(:disabled){ background:var(--accent-dim); }
+  .btn.active{ background:var(--blue); border-color:var(--blue); color:#0a1730; font-weight:600; }
   .live{ display:flex; align-items:center; gap:6px; font-size:13px; }
   .live .dot{ width:7px; height:7px; border-radius:50%; background:var(--bull); animation:pulse 1.8s infinite; }
   @keyframes pulse{ 0%,100%{ opacity:1; } 50%{ opacity:.35; } }
   @media (prefers-reduced-motion: reduce){ .live .dot{ animation:none; } }
   .live .price{ font-weight:600; }
 
-  .indicators{ display:flex; flex-wrap:wrap; gap:14px; margin-bottom:10px; }
+  .indicators{ display:flex; flex-wrap:wrap; gap:14px; margin-bottom:8px; flex-shrink:0; }
   .ind-toggle{ display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-dim); }
   .ind-toggle .swatch{ width:10px; height:3px; border-radius:2px; }
 
-  .workspace{ display:grid; grid-template-columns:1fr 340px; gap:14px; }
-  @media (max-width:900px){ .workspace{ grid-template-columns:1fr; } }
+  .workspace{ display:grid; grid-template-columns:1fr 340px; gap:14px; flex:1 1 auto; min-height:0; overflow:hidden; }
 
-  .chart-col{ min-width:0; }
-  #chart{ width:100%; height:460px; background:var(--panel); border:1px solid var(--border); border-radius:8px; position:relative; }
-  @media (max-width:640px){ #chart{ height:300px; } }
+  .chart-col{ min-width:0; min-height:0; display:flex; flex-direction:column; }
+  #chart{ width:100%; flex:1 1 auto; min-height:0; background:var(--panel); border:1px solid var(--border); border-radius:8px; position:relative; }
   .pnl-overlay{ position:absolute; top:10px; left:12px; z-index:5; pointer-events:none; font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:17px; padding:4px 10px; border-radius:6px; background:rgba(11,14,20,0.72); display:none; }
   .pnl-overlay.pos{ color:var(--bull); } .pnl-overlay.neg{ color:var(--bear); }
   .drag-hint{ font-size:10px; color:var(--text-faint); position:absolute; bottom:6px; left:12px; z-index:5; pointer-events:none; }
 
-  .playback-bar{ margin-top:10px; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:10px 12px; }
+  .playback-bar{ margin-top:8px; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:8px 12px; flex-shrink:0; }
   .pb-row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-  .pb-time{ font-size:12px; color:var(--text-dim); margin-bottom:8px; }
+  .pb-time{ font-size:12px; color:var(--text-dim); margin-bottom:6px; }
   .speed-group{ display:flex; gap:4px; margin-left:auto; }
   .speed-btn{ background:var(--panel-alt); border:1px solid var(--border); color:var(--text-dim); border-radius:5px; padding:4px 8px; font-size:12px; }
   .speed-btn.active{ background:var(--accent); border-color:var(--accent); color:#181000; font-weight:600; }
-  input[type=range]{ width:100%; margin-top:10px; accent-color:var(--accent); }
+  input[type=range]{ width:100%; margin-top:8px; accent-color:var(--accent); }
 
-  .side-col{ display:flex; flex-direction:column; gap:12px; }
-  .panel{ background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:12px; }
-  .panel h2{ font-size:12px; text-transform:none; letter-spacing:.2px; color:var(--text-dim); margin:0 0 10px; font-weight:500; }
-  .row{ display:flex; justify-content:space-between; align-items:center; padding:3px 0; font-size:13px; }
+  .side-col{ display:flex; flex-direction:column; gap:8px; min-height:0; overflow-y:auto; padding-right:4px; }
+  .panel{ background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:10px 12px; flex-shrink:0; }
+  .panel h2{ font-size:12px; text-transform:none; letter-spacing:.2px; color:var(--text-dim); margin:0 0 8px; font-weight:500; display:flex; align-items:center; }
+  .row{ display:flex; justify-content:space-between; align-items:center; padding:2px 0; font-size:13px; }
   .row .v{ font-weight:600; }
   .row .v input{ width:90px; background:var(--panel-alt); border:1px solid var(--border); color:var(--text); border-radius:5px; padding:4px 6px; font-size:12px; text-align:right; font-family:'IBM Plex Mono',monospace; }
   .pos{ color:var(--bull); } .neg{ color:var(--bear); }
 
-  .trade-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
+  .trade-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px; }
   .trade-grid label{ display:block; font-size:11px; color:var(--text-dim); margin-bottom:3px; }
   .trade-grid input{ width:100%; background:var(--panel-alt); border:1px solid var(--border); color:var(--text); border-radius:6px; padding:6px 7px; font-size:13px; }
   .trade-actions{ display:flex; gap:8px; }
@@ -85,21 +84,41 @@
   .btn-short{ background:var(--bear); border-color:var(--bear); color:#2a0708; font-weight:600; }
   .hint{ font-size:11px; color:var(--text-faint); margin-top:8px; line-height:1.5; }
 
-  .log-list{ max-height:220px; overflow-y:auto; font-size:12px; }
-  .log-item{ display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid var(--border); }
+  .log-list{ max-height:160px; overflow-y:auto; font-size:12px; }
+  .log-item{ display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid var(--border); }
   .log-item:last-child{ border-bottom:none; }
   .log-empty{ color:var(--text-faint); font-size:12px; }
 
-  .status-bar{ margin-top:12px; font-size:12px; color:var(--text-dim); min-height:16px; }
+  .status-bar{ margin-top:6px; font-size:11px; color:var(--text-dim); min-height:14px; flex-shrink:0; }
   .status-bar.warn{ color:var(--warn); }
-  footer{ margin-top:18px; padding-top:12px; border-top:1px solid var(--border); font-size:11px; color:var(--text-faint); line-height:1.6; }
+
+  .info-icon{ position:relative; display:inline-flex; align-items:center; justify-content:center; width:14px; height:14px; border-radius:50%; background:var(--panel-alt); border:1px solid var(--border); color:var(--text-dim); font-size:10px; line-height:1; cursor:help; margin-left:6px; flex-shrink:0; }
+  .info-icon .tip{ visibility:hidden; opacity:0; position:absolute; top:120%; left:0; width:230px; background:var(--panel-alt); border:1px solid var(--border); border-radius:6px; padding:8px 10px; font-size:11px; line-height:1.5; color:var(--text-dim); z-index:30; transition:opacity .15s; pointer-events:none; font-weight:400; }
+  .info-icon:hover .tip, .info-icon:focus .tip{ visibility:visible; opacity:1; }
+
+  .toast{ position:fixed; top:14px; left:50%; transform:translateX(-50%); z-index:50; background:var(--panel); border:1px solid var(--border); border-left:4px solid var(--accent); border-radius:8px; padding:10px 16px; font-size:13px; box-shadow:0 8px 24px rgba(0,0,0,.45); opacity:0; pointer-events:none; transition:opacity .25s ease, transform .25s ease; max-width:90vw; }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(6px); }
+  .toast.tp{ border-left-color:var(--bull); }
+  .toast.sl, .toast.liquidare{ border-left-color:var(--bear); }
+
+  @media (max-width:900px){
+    html,body{ height:auto; overflow:auto; }
+    .app{ height:auto; overflow:visible; }
+    .workspace{ grid-template-columns:1fr; height:auto; overflow:visible; }
+    .chart-col{ height:auto; }
+    #chart{ height:300px; flex:none; }
+    .side-col{ height:auto; overflow:visible; }
+  }
 </style>
 </head>
 <body>
 <div class="app">
 
   <div class="topbar">
-    <div class="brand"><span class="mark"></span><h1>BTC Backtester</h1></div>
+    <div class="brand">
+      <span class="mark"></span><h1>BTC Backtester</h1>
+      <span class="info-icon" tabindex="0">ⓘ<span class="tip">Date reale de pe Binance (piață spot). Instrument educațional pentru exersat strategii — folosește bani virtuali, nu constituie sfat financiar. Fără slippage, fără funding; SL/TP execută exact la nivelul setat.</span></span>
+    </div>
     <div class="field-group">
       <label>Simbol</label>
       <select id="symbolSelect">
@@ -150,8 +169,13 @@
         <option value="1w">1 săptămână</option>
       </select>
     </div>
+    <div class="field-group">
+      <label>Istoric de la <span class="info-icon" tabindex="0">ⓘ<span class="tip">Opțional. Alege o dată și la încărcare se aduce automat tot istoricul până atunci, fără să mai apeși repetat pe „+ Istoric".</span></span></label>
+      <input type="date" id="historyFromInput">
+    </div>
     <button class="btn btn-accent" id="loadBtn">Încarcă / Actualizează</button>
     <button class="btn" id="moreHistBtn">+ Istoric</button>
+    <button class="btn" id="autoUpdateBtn" title="Aduce automat lumânări noi pe măsură ce apar">⟳ Auto-actualizare</button>
     <div class="live"><span class="dot"></span><span>Live:</span><span class="price num" id="livePrice">—</span></div>
   </div>
 
@@ -188,6 +212,7 @@
     <div class="side-col">
       <div class="panel">
         <h2>Cont</h2>
+        <div class="row"><span>Balanță inițială</span><span class="v"><input type="text" id="startBalanceInput" value="10000"></span></div>
         <div class="row"><span>Balanță</span><span class="v num" id="balanceOut">$10,000.00</span></div>
         <div class="row"><span>Echitate curentă</span><span class="v num" id="equityOut">$10,000.00</span></div>
         <div class="row"><span>Randament total</span><span class="v num" id="returnOut">0.00%</span></div>
@@ -197,7 +222,7 @@
       </div>
 
       <div class="panel">
-        <h2>Deschide poziție</h2>
+        <h2>Deschide poziție <span class="info-icon" tabindex="0">ⓘ<span class="tip">Implicit, SL/TP se introduc ca preț exact (ex: 58000). Bifează „Folosește %" ca să le introduci procentual față de intrare. Execuție la nivelul exact atins de lumânarea următoare (fără slippage); dacă ambele ar fi atinse în aceeași lumânare, are prioritate SL. Cu leverage, poziția se lichidează automat dacă pierderea atinge marja folosită — balanța nu poate ajunge în minus. O singură poziție activă deodată.</span></span></h2>
         <div class="row"><span>Preț curent (simulare)</span><span class="v num" id="simPriceOut">—</span></div>
         <div class="trade-grid">
           <div><label>Mărime (% balanță)</label><input type="text" id="sizePct" value="100"></div>
@@ -213,11 +238,10 @@
           <button class="btn btn-long" id="longBtn">Cumpără (Long)</button>
           <button class="btn btn-short" id="shortBtn">Vinde (Short)</button>
         </div>
-        <div class="hint">Implicit, SL/TP se introduc ca preț exact (ex: 58000). Bifează „Folosește %" ca să le introduci procentual față de intrare. Se execută la nivelul exact atins de lumânarea următoare (fără slippage); dacă ambele ar fi atinse în aceeași lumânare, are prioritate SL. O singură poziție activă deodată.</div>
       </div>
 
       <div class="panel" id="positionPanel">
-        <h2>Poziție deschisă</h2>
+        <h2>Poziție deschisă <span class="info-icon" tabindex="0">ⓘ<span class="tip">Poți edita SL/TP aici și apăsa „Actualizează SL/TP", sau poți trage direct de liniile punctate de pe grafic ca să le ajustezi.</span></span></h2>
         <div class="log-empty" id="noPosText">Fără poziție deschisă.</div>
         <div id="posDetails" style="display:none;">
           <div class="row"><span>Direcție</span><span class="v" id="posSide">—</span></div>
@@ -227,7 +251,6 @@
           <div class="row"><span>Take Profit</span><span class="v"><input type="text" id="posTpInput" placeholder="—"></span></div>
           <div class="row"><span>PnL nerealizat</span><span class="v num" id="posPnl">—</span></div>
           <button class="btn" id="updateSlTpBtn" style="width:100%; margin-top:2px;">Actualizează SL/TP</button>
-          <div class="hint" style="margin-top:6px;">Poți și trage direct de liniile SL/TP de pe grafic ca să le ajustezi.</div>
           <button class="btn" id="closeBtn" style="width:100%; margin-top:6px;">Închide poziția</button>
         </div>
       </div>
@@ -247,10 +270,6 @@
   </div>
 
   <div class="status-bar" id="statusBar">Se încarcă datele inițiale…</div>
-
-  <footer>
-    Date reale de pe Binance (piață spot). Instrument educațional pentru exersat strategii — folosește bani virtuali, nu constituie sfat financiar. Modelul simplifică unele lucruri: fără slippage, fără funding, execuție SL/TP exact la nivelul setat.
-  </footer>
 </div>
 
 <script>
@@ -258,6 +277,7 @@
   "use strict";
 
   const COLORS = { bull:'#2FBF8F', bear:'#E5484D', accent:'#F7931A', blue:'#5B8DEF', purple:'#C77DFF' };
+  const INTERVAL_SECONDS = { '1m':60, '5m':300, '15m':900, '30m':1800, '1h':3600, '4h':14400, '1d':86400, '1w':604800 };
 
   const state = {
     symbol:'BTCUSDT', interval:'1h', candles:[],
@@ -266,7 +286,8 @@
     startBalance:10000, balance:10000, slTpMode:'price',
     position:null, trades:[], markers:[],
     slLine:null, tpLine:null, entryLine:null,
-    peakEquity:10000, maxDrawdownPct:0
+    peakEquity:10000, maxDrawdownPct:0,
+    autoUpdate:false, autoUpdateTimer:null
   };
 
   let dragState = null;
@@ -311,6 +332,14 @@
     const el = document.getElementById('statusBar');
     el.textContent = msg;
     el.className = 'status-bar'+(warn?' warn':'');
+  }
+  function showToast(msg, kind){
+    let t = document.getElementById('toast');
+    if(!t){ t = document.createElement('div'); t.id='toast'; document.body.appendChild(t); }
+    t.textContent = msg;
+    t.className = 'toast show '+(kind||'');
+    clearTimeout(t._hideTimer);
+    t._hideTimer = setTimeout(()=>{ t.classList.remove('show'); }, 4000);
   }
 
   async function fetchCandles(symbol, interval, limit, endTime){
@@ -359,11 +388,32 @@
   }
 
   // ---------- data loading ----------
+  async function fetchHistoryUntil(symbol, interval, untilTimeSec){
+    let all = await fetchCandles(symbol, interval, 1000, null);
+    let batches = 1;
+    const maxBatches = 40;
+    while(all.length && all[0].time > untilTimeSec && batches < maxBatches){
+      const older = await fetchCandles(symbol, interval, 1000, all[0].time*1000-1);
+      if(!older.length) break;
+      all = older.concat(all);
+      batches++;
+      setStatus(`Se încarcă istoric… (${batches} loturi, ${all.length} lumânări)`);
+    }
+    return all;
+  }
+
   async function loadData(){
     setStatus('Se încarcă datele de pe Binance…');
     document.getElementById('loadBtn').disabled = true;
     try{
-      const raw = await fetchCandles(state.symbol, state.interval, 1000, null);
+      const fromDate = document.getElementById('historyFromInput').value;
+      let raw;
+      if(fromDate){
+        const untilSec = Math.floor(new Date(fromDate+'T00:00:00Z').getTime()/1000);
+        raw = await fetchHistoryUntil(state.symbol, state.interval, untilSec);
+      } else {
+        raw = await fetchCandles(state.symbol, state.interval, 1000, null);
+      }
       if(!raw.length) throw new Error('Simbol inexistent sau fără date');
       state.candles = raw;
       try{ localStorage.setItem(cacheKey(), JSON.stringify(raw)); }catch(e){}
@@ -394,7 +444,15 @@
     setStatus('Se schimbă intervalul de timp…');
     document.getElementById('loadBtn').disabled = true;
     try{
-      const raw = await fetchCandles(state.symbol, newInterval, 1000, null);
+      const durSec = INTERVAL_SECONDS[newInterval] || 3600;
+      let raw;
+      if(anchorTime!=null){
+        const endTimeMs = (anchorTime + durSec*500) * 1000;
+        raw = await fetchCandles(state.symbol, newInterval, 1000, endTimeMs);
+        if(!raw.length) raw = await fetchCandles(state.symbol, newInterval, 1000, null);
+      } else {
+        raw = await fetchCandles(state.symbol, newInterval, 1000, null);
+      }
       if(!raw.length) throw new Error('Fără date pentru acest interval.');
       state.interval = newInterval;
       state.candles = raw;
@@ -410,13 +468,33 @@
       renderChart();
       fitView();
       updateAllUI();
-      setStatus(`Interval schimbat la ${newInterval} — balanța, poziția deschisă și istoricul de tranzacții au fost păstrate.`);
+      setStatus(`Interval schimbat la ${newInterval} — data, balanța și poziția deschisă au fost păstrate.`);
     }catch(err){
       console.error(err);
       setStatus('Eroare la schimbarea intervalului. Verifică conexiunea la internet.', true);
     }
     document.getElementById('loadBtn').disabled = false;
     restartLivePoll();
+  }
+
+  async function addNewCandles(){
+    if(!state.candles.length) return;
+    try{
+      const latest = await fetchCandles(state.symbol, state.interval, 5, null);
+      if(!latest.length) return;
+      let added = 0;
+      latest.forEach(nc=>{
+        const idx = state.candles.findIndex(c=>c.time===nc.time);
+        if(idx>=0){ state.candles[idx] = nc; }
+        else if(nc.time > state.candles[state.candles.length-1].time){ state.candles.push(nc); added++; }
+      });
+      if(added>0){
+        try{ localStorage.setItem(cacheKey(), JSON.stringify(state.candles)); }catch(e){}
+        computeIndicators();
+        updateScrubberRange();
+        if(state.cursor+1 >= state.candles.length-added-1) renderChart();
+      }
+    }catch(e){ /* silent — auto-update retries on the next tick */ }
   }
 
   async function loadMoreHistory(){
@@ -567,7 +645,10 @@
     const slRaw = document.getElementById('slVal').value;
     const tpRaw = document.getElementById('tpVal').value;
     const notional = state.balance*(sizePct/100)*leverage;
+    const margin = state.balance*(sizePct/100);
     const qty = notional/entry;
+    const dir = side==='long' ? 1 : -1;
+    const liqPrice = entry - dir*(margin/qty);
     let sl=null, tp=null;
     if(state.slTpMode==='percent'){
       if(slRaw !== ''){ const p=Math.abs(parseFloat(slRaw)); if(!isNaN(p)) sl = side==='long' ? entry*(1-p/100) : entry*(1+p/100); }
@@ -584,10 +665,10 @@
       if(tp!=null && tp>=entry){ setStatus(`Take Profit trebuie să fie sub prețul de intrare (${formatUsd(entry)}) pentru o poziție Short.`, true); return; }
     }
 
-    state.position = { side, entry, qty, sl, tp, entryTime:c.time, leverage };
+    state.position = { side, entry, qty, sl, tp, entryTime:c.time, leverage, margin, liqPrice };
     drawPositionLines();
     addMarker(c.time, side==='long'?'arrowUp':'arrowDown', side==='long'?'Buy':'Sell', side==='long'?COLORS.bull:COLORS.bear, side==='long'?'belowBar':'aboveBar');
-    setStatus(`Poziție ${side==='long'?'LONG':'SHORT'} deschisă la ${formatUsd(entry)}.`);
+    setStatus(`Poziție ${side==='long'?'LONG':'SHORT'} deschisă la ${formatUsd(entry)}.`+(leverage>1?` Lichidare la ${formatUsd(liqPrice)}.`:''));
     updateAllUI();
   }
 
@@ -604,12 +685,21 @@
     const feePct = parseFloat(document.getElementById('feePct').value)||0;
     const fee = (p.entry*p.qty + exitPrice*p.qty)*(feePct/100);
     pnl -= fee;
-    state.balance += pnl;
+    state.balance = Math.max(0, state.balance+pnl);
     state.trades.push({ side:p.side, entry:p.entry, exit:exitPrice, entryTime:p.entryTime, exitTime, pnl, reason });
     addMarker(exitTime, p.side==='long'?'arrowDown':'arrowUp', reason, pnl>=0?COLORS.bull:COLORS.bear, p.side==='long'?'aboveBar':'belowBar');
     clearPositionLines();
     state.position = null;
     setStatus(`Poziție închisă (${reason}) la ${formatUsd(exitPrice)} — PnL: ${formatSigned(pnl)} $`);
+    if(reason==='SL'||reason==='TP'||reason==='Lichidare'){
+      const label = reason==='SL' ? 'Stop Loss' : reason==='TP' ? 'Take Profit' : 'Lichidare';
+      showToast(`${label} declanșat — PnL: ${formatSigned(pnl)} $`, reason.toLowerCase());
+      if(state.playing && state.speed>1){
+        state.speed = 1;
+        document.querySelectorAll('.speed-btn').forEach(b=>b.classList.toggle('active', b.dataset.speed==='1'));
+        pause(); play();
+      }
+    }
     updateAllUI();
   }
 
@@ -617,9 +707,11 @@
     if(!state.position) return;
     const p = state.position;
     if(p.side==='long'){
+      if(c.low<=p.liqPrice){ closePosition(p.liqPrice,'Lichidare',c.time); return; }
       if(p.sl!=null && c.low<=p.sl){ closePosition(p.sl,'SL',c.time); return; }
       if(p.tp!=null && c.high>=p.tp){ closePosition(p.tp,'TP',c.time); return; }
     } else {
+      if(c.high>=p.liqPrice){ closePosition(p.liqPrice,'Lichidare',c.time); return; }
       if(p.sl!=null && c.high>=p.sl){ closePosition(p.sl,'SL',c.time); return; }
       if(p.tp!=null && c.low<=p.tp){ closePosition(p.tp,'TP',c.time); return; }
     }
@@ -739,8 +831,8 @@
     document.getElementById('cursorTime').textContent = new Date(c.time*1000).toLocaleString('ro-RO', { dateStyle:'medium', timeStyle:'short' });
     document.getElementById('simPriceOut').textContent = formatUsd(c.close);
 
-    const equity = state.balance + unrealizedPnl(c);
-    document.getElementById('balanceOut').textContent = formatUsd(state.balance);
+    const equity = Math.max(0, state.balance + unrealizedPnl(c));
+    document.getElementById('balanceOut').textContent = formatUsd(equity);
     document.getElementById('equityOut').textContent = formatUsd(equity);
     const ret = (equity-state.startBalance)/state.startBalance*100;
     const retEl = document.getElementById('returnOut');
@@ -815,6 +907,27 @@
   document.getElementById('moreHistBtn').addEventListener('click', loadMoreHistory);
   document.getElementById('resetBtn').addEventListener('click', resetSimulation);
   document.getElementById('fitBtn').addEventListener('click', fitView);
+  document.getElementById('startBalanceInput').addEventListener('change', e=>{
+    const v = parseFloat(e.target.value);
+    if(isNaN(v) || v<=0){ setStatus('Balanța inițială trebuie să fie un număr pozitiv.', true); e.target.value = state.startBalance; return; }
+    state.startBalance = v;
+    resetSimulation();
+    setStatus(`Balanță inițială setată la ${formatUsd(v)} — simularea a fost resetată.`);
+  });
+  document.getElementById('autoUpdateBtn').addEventListener('click', ()=>{
+    state.autoUpdate = !state.autoUpdate;
+    const btn = document.getElementById('autoUpdateBtn');
+    btn.classList.toggle('active', state.autoUpdate);
+    btn.textContent = state.autoUpdate ? '⟳ Auto-actualizare: ON' : '⟳ Auto-actualizare';
+    if(state.autoUpdate){
+      addNewCandles();
+      state.autoUpdateTimer = setInterval(addNewCandles, 30000);
+      setStatus('Auto-actualizare pornită — se aduc lumânări noi la 30 de secunde.');
+    } else {
+      if(state.autoUpdateTimer) clearInterval(state.autoUpdateTimer);
+      setStatus('Auto-actualizare oprită.');
+    }
+  });
   document.getElementById('updateSlTpBtn').addEventListener('click', ()=>{
     if(!state.position) return;
     const p = state.position;
